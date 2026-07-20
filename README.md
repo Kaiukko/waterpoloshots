@@ -1,8 +1,8 @@
-# Waterpolo Summer Cup — Sport Project Bari
+# Campionato di Serie B — Pallanuoto Maschile
 
-App full-stack (Next.js + Supabase) per la gestione del torneo Waterpolo Summer Cup.
-Tema "Championship Dark" (nero, rosso, oro), branding dinamico, calendario, classifiche,
-tabellone finali 1°-8°, e pannello admin completo.
+App full-stack (Next.js + Supabase) per la gestione del campionato di Serie B di pallanuoto
+maschile. Girone all'italiana (Andata + Ritorno), tema "Championship Dark" (nero, rosso, oro),
+branding dinamico, calendario, classifiche, schede squadra e pannello admin completo.
 
 ## Stato attuale
 
@@ -36,34 +36,47 @@ con quelli del tuo nuovo progetto (Project Settings → API).
 
 ```
 app/
-  page.tsx              → Home (hero, live, prossime partite, risultati)
-  calendario/page.tsx    → Calendario filtrabile per tappa/girone + ricerca
-  classifiche/page.tsx   → Classifiche gironi, circuito, marcatori
-  finali/page.tsx        → Tabellone eliminazione diretta 1°-8°
-  admin/page.tsx         → Pannello admin (login + gestione completa)
+  page.tsx                 → Home (hero, live, prossime partite, risultati)
+  calendario/page.tsx      → Calendario raggruppato per Giornata (Andata/Ritorno) + ricerca
+  classifiche/page.tsx     → Classifica di Campionato + Classifica Marcatori (tab separate)
+  squadre/page.tsx         → Elenco squadre con rosa (link alla scheda di ciascuna)
+  squadre/[id]/page.tsx    → Scheda squadra: logo, nome, rosa completa
+  giocatori/[id]/page.tsx  → Scheda giocatore: nome in grande, foto, calottina, squadra, gol
+  admin/page.tsx           → Pannello admin (login + gestione completa)
   layout.tsx, globals.css
 components/
   MatchCard, BottomNav, ShareButton
-  admin/                 → componenti CRUD (Squadre, Giocatori, Partite, Sedi, Impostazioni)
+  admin/                    → componenti CRUD (Squadre, Giocatori, Partite, Sedi, Impostazioni)
 lib/
-  supabase.ts            → client Supabase (URL + anon key)
-  types.ts                → tipi TypeScript condivisi
-  standings.ts            → algoritmo classifiche + generazione tabellone quarti
-  data.ts                  → hook di fetching dati realtime
-  upload.ts                → upload immagini su Storage + log attività
+  supabase.ts               → client Supabase (URL + anon key)
+  types.ts                  → tipi TypeScript condivisi
+  standings.ts               → algoritmo classifica (3/1/0 punti, spareggi)
+  data.ts                     → hook di fetching dati realtime + calcolo gol per giocatore
+  upload.ts                   → upload immagini su Storage + log attività
 supabase/
-  schema.sql              → schema SQL completo (tabelle, RLS, storage, utente admin)
+  schema.sql                 → schema SQL completo (tabelle, RLS, storage, utente admin)
 ```
+
+## Regole del campionato
+
+- **Formato:** girone all'italiana, tutte le squadre si affrontano due volte (Andata e Ritorno).
+- **Punti:** 3 per la vittoria, 1 per il pareggio, 0 per la sconfitta.
+- **Spareggi in classifica:** 1) scontri diretti tra le squadre a pari punti, 2) differenza reti generale.
+- **Generazione automatica del ritorno:** quando l'amministratore crea una partita di andata
+  (squadre, data, ora, piscina), il sistema genera automaticamente la partita di ritorno con
+  casa/fuori invertiti. L'amministratore dovrà solo aggiungere data, ora e piscina quando
+  modifica quella partita.
+- **Marcatori per partita:** dalla scheda di modifica di ogni partita (Admin → Partite) si
+  possono assegnare i gol ai singoli giocatori delle due squadre. I gol totali di ogni
+  giocatore (mostrati sulla sua scheda e nella Classifica Marcatori) si aggiornano automaticamente.
+- **Schede pubbliche:** ogni squadra e ogni giocatore ha una scheda dedicata, visibile da
+  tutti (`/squadre/[id]`, `/giocatori/[id]`) ma modificabile solo dall'amministratore tramite
+  il pannello `/admin`.
 
 ## Note tecniche
 
 - **Realtime:** tutte le pagine pubbliche e l'admin si aggiornano automaticamente via
   Supabase Realtime (nessun refresh manuale necessario).
-- **Tabellone finali:** dal pannello admin (tab "Partite") il pulsante "Genera Tabellone"
-  crea automaticamente i quarti di finale incrociando i primi 4 classificati di ciascun
-  girone (1A-4B, 2A-3B, 2B-3A, 1B-4A). Semifinali e finali di piazzamento (1°-2°, 3°-4°,
-  5°-6°, 7°-8°) si aggiungono manualmente selezionando "Finali" come girone e il turno
-  corrispondente, una volta noti i vincitori dei turni precedenti.
 - **Branding dinamico:** i colori impostati in Admin → Impostazioni vengono iniettati come
   variabili CSS (`--color-primary`, `--color-secondary`) e si applicano istantaneamente a
   tutta l'interfaccia pubblica.
