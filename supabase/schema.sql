@@ -1,21 +1,20 @@
 -- ============================================================
--- Waterpolo Summer Cup — Schema Supabase completo
--- Esegui questo file nel SQL Editor di Supabase (o via CLI)
--- su un progetto nuovo per replicare l'ambiente.
+-- Campionato di Serie B — Pallanuoto Maschile — Schema Supabase
+-- Girone all'italiana: Andata + Ritorno
+-- Esegui questo file nel SQL Editor di Supabase su un progetto
+-- nuovo per replicare l'ambiente.
 -- ============================================================
 
--- Impostazioni torneo (riga singola, branding dinamico)
 create table if not exists app_settings (
   id boolean primary key default true,
-  tournament_title text default 'Waterpolo Summer Cup',
-  tournament_subtitle text default 'Sport Project Bari',
+  tournament_title text default 'Campionato di Serie B',
+  tournament_subtitle text default 'Pallanuoto Maschile',
   logo_url text,
   primary_color text default '#E10600',
   secondary_color text default '#D4AF37',
   home_background_url text,
   header_background_url text,
-  current_stage_number int default 1,
-  current_stage_name text default 'Fase a Gironi',
+  current_matchday int default 1,
   updated_at timestamptz default now(),
   constraint single_row check (id = true)
 );
@@ -35,7 +34,6 @@ create table if not exists teams (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   logo_url text,
-  group_name text check (group_name in ('A','B')) not null default 'A',
   created_at timestamptz default now()
 );
 
@@ -46,16 +44,17 @@ create table if not exists players (
   cap_number int,
   photo_url text,
   role text,
-  goals int default 0,
   created_at timestamptz default now()
 );
 
+-- Partite: girone all'italiana con andata/ritorno.
+-- Ogni partita di ritorno referenzia (return_of) la partita di andata
+-- da cui è stata generata automaticamente (squadre invertite).
 create table if not exists matches (
   id uuid primary key default gen_random_uuid(),
-  stage_number int not null default 1,
-  group_name text check (group_name in ('A','B','Finali')) not null default 'A',
-  bracket_round text check (bracket_round in ('quarti','semifinali','finale_1_2','finale_3_4','finale_5_6','finale_7_8')),
-  bracket_slot int,
+  leg text check (leg in ('Andata','Ritorno')) not null default 'Andata',
+  return_of uuid references matches(id) on delete set null,
+  matchday int,
   team_home_id uuid references teams(id),
   team_away_id uuid references teams(id),
   venue_id uuid references venues(id),
@@ -67,6 +66,17 @@ create table if not exists matches (
   period_info text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
+);
+
+-- Marcatori per singola partita: i gol totali di ogni giocatore vengono
+-- calcolati sommando queste righe (non più inseriti manualmente sulla squadra).
+create table if not exists match_scorers (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid references matches(id) on delete cascade not null,
+  player_id uuid references players(id) on delete cascade not null,
+  goals int not null default 1 check (goals > 0),
+  created_at timestamptz default now(),
+  unique (match_id, player_id)
 );
 
 create table if not exists activity_log (
@@ -81,22 +91,23 @@ alter table venues enable row level security;
 alter table teams enable row level security;
 alter table players enable row level security;
 alter table matches enable row level security;
+alter table match_scorers enable row level security;
 alter table activity_log enable row level security;
 
--- Lettura pubblica (frontend senza login)
 create policy "public read app_settings" on app_settings for select using (true);
 create policy "public read venues" on venues for select using (true);
 create policy "public read teams" on teams for select using (true);
 create policy "public read players" on players for select using (true);
 create policy "public read matches" on matches for select using (true);
+create policy "public read match_scorers" on match_scorers for select using (true);
 create policy "public read activity_log" on activity_log for select using (true);
 
--- Scrittura riservata agli utenti autenticati (admin)
 create policy "auth write app_settings" on app_settings for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "auth write venues" on venues for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "auth write teams" on teams for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "auth write players" on players for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "auth write matches" on matches for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "auth write match_scorers" on match_scorers for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "auth write activity_log" on activity_log for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- Storage: bucket pubblici per loghi, foto giocatori, immagini branding
@@ -116,8 +127,7 @@ create policy "auth delete logos" on storage.objects for delete using (bucket_id
 
 -- ============================================================
 -- Utente amministratore (email/password, Supabase Auth)
--- Sostituisci email e password prima di eseguire, poi esegui
--- questo blocco UNA SOLA VOLTA.
+-- Sostituisci email e password prima di eseguire.
 -- ============================================================
 do $$
 declare
