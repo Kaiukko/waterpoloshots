@@ -24,8 +24,6 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
         secondary_color: form.secondary_color,
         home_background_url: form.home_background_url,
         header_background_url: form.header_background_url,
-        current_stage_number: form.current_stage_number,
-        current_stage_name: form.current_stage_name,
       })
       .eq("id", true);
     await logActivity("Impostazioni del torneo aggiornate");
@@ -108,27 +106,6 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
         onChange={(url) => setForm({ ...form, header_background_url: url })}
         label="Immagine sfondo Header"
       />
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Numero tappa attiva</label>
-          <input
-            type="number"
-            value={form.current_stage_number}
-            onChange={(e) => setForm({ ...form, current_stage_number: Number(e.target.value) })}
-            className="w-full rounded-lg px-3 py-2 text-sm"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Nome tappa</label>
-          <input
-            value={form.current_stage_name}
-            onChange={(e) => setForm({ ...form, current_stage_name: e.target.value })}
-            placeholder="es. Fase a Gironi"
-            className="w-full rounded-lg px-3 py-2 text-sm"
-          />
-        </div>
-      </div>
 
       <button
         onClick={save}

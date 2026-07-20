@@ -32,12 +32,12 @@ function shareText(m: Match, teams: Team[], venues: Venue[]) {
   const away = teamName(teams, m.team_away_id);
   const venue = venues.find((v) => v.id === m.venue_id)?.name ?? "";
   if (m.status === "Terminata") {
-    return `🏆 Waterpolo Summer Cup — Risultato finale\n${home} ${m.score_home} - ${m.score_away} ${away}\n📍 ${venue}`;
+    return `🏆 Serie B Pallanuoto — Risultato finale\n${home} ${m.score_home} - ${m.score_away} ${away}\n📍 ${venue}`;
   }
   if (m.status === "In Corso") {
-    return `🔴 IN CORSO — Waterpolo Summer Cup\n${home} vs ${away}\n📍 ${venue}`;
+    return `🔴 IN CORSO — Serie B Pallanuoto\n${home} vs ${away}\n📍 ${venue}`;
   }
-  return `🤽 Waterpolo Summer Cup\n${home} vs ${away}\n📅 ${m.match_date ?? ""} ⏰ ${m.match_time ?? ""}\n📍 ${venue}`;
+  return `🤽 Serie B Pallanuoto\n${home} vs ${away}\n📅 ${m.match_date ?? ""} ⏰ ${m.match_time ?? ""}\n📍 ${venue}`;
 }
 
 export default function MatchCard({ match, teams, venues }: { match: Match; teams: Team[]; venues: Venue[] }) {
@@ -54,7 +54,8 @@ export default function MatchCard({ match, teams, venues }: { match: Match; team
         {match.status === "Terminata" && (
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A8A8E]">
-              Tappa {match.stage_number} · Girone {match.group_name}
+              {match.leg}
+              {match.matchday ? ` · Giornata ${match.matchday}` : ""}
             </span>
             <ShareButton text={text} variant="compact" />
           </div>
@@ -112,7 +113,8 @@ export default function MatchCard({ match, teams, venues }: { match: Match; team
           >
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
             <h3 className="mb-1 text-center text-[11px] font-bold uppercase tracking-wider text-gold">
-              Tappa {match.stage_number} · {match.group_name === "Finali" ? "Fase Finale" : `Girone ${match.group_name}`}
+              {match.leg}
+              {match.matchday ? ` · Giornata ${match.matchday}` : ""}
             </h3>
             <div className="mb-4 flex items-center justify-between gap-3">
               <TeamBadge teams={teams} id={match.team_home_id} align="left" />

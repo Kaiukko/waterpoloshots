@@ -8,8 +8,8 @@ const display = Oswald({ subsets: ["latin"], weight: ["500", "600", "700"], vari
 const body = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-body" });
 
 export const metadata: Metadata = {
-  title: "Waterpolo Summer Cup — Sport Project Bari",
-  description: "Il torneo estivo di pallanuoto di Sport Project Bari: calendario, risultati e classifiche live.",
+  title: "Campionato di Serie B — Pallanuoto Maschile",
+  description: "Il campionato di Serie B di pallanuoto maschile: calendario, risultati e classifiche live.",
 };
 
 export const dynamic = "force-dynamic";

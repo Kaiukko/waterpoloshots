@@ -5,14 +5,12 @@ import MatchCard from "@/components/MatchCard";
 
 export default function CalendarioPage() {
   const { teams, venues, matches, loading } = useTournamentData();
-  const [stage, setStage] = useState<"all" | 1 | 2>("all");
-  const [group, setGroup] = useState<"all" | "A" | "B" | "Finali">("all");
+  const [leg, setLeg] = useState<"all" | "Andata" | "Ritorno">("all");
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
     return matches.filter((m) => {
-      if (stage !== "all" && m.stage_number !== stage) return false;
-      if (group !== "all" && m.group_name !== group) return false;
+      if (leg !== "all" && m.leg !== leg) return false;
       if (query.trim()) {
         const q = query.trim().toLowerCase();
         const home = teamById(teams, m.team_home_id)?.name?.toLowerCase() || "";
@@ -21,7 +19,26 @@ export default function CalendarioPage() {
       }
       return true;
     });
-  }, [matches, stage, group, query, teams]);
+  }, [matches, leg, query, teams]);
+
+  const grouped = useMemo(() => {
+    const groups = new Map<string, typeof filtered>();
+    for (const m of filtered) {
+      const key = m.matchday ? `${m.leg} · Giornata ${m.matchday}` : `${m.leg} · Giornata da definire`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(m);
+    }
+    return Array.from(groups.entries()).sort((a, b) => {
+      const [legA, gA] = a[0].split(" · Giornata ");
+      const [legB, gB] = b[0].split(" · Giornata ");
+      if (legA !== legB) return legA === "Andata" ? -1 : 1;
+      const numA = parseInt(gA, 10);
+      const numB = parseInt(gB, 10);
+      if (isNaN(numA)) return 1;
+      if (isNaN(numB)) return -1;
+      return numA - numB;
+    });
+  }, [filtered]);
 
   return (
     <main className="mx-auto max-w-md px-4 pb-8 pt-6">
@@ -37,39 +54,32 @@ export default function CalendarioPage() {
         />
       </div>
 
-      <div className="mb-2 flex gap-2 overflow-x-auto pb-1">
-        {(["all", 1, 2] as const).map((s) => (
-          <button
-            key={String(s)}
-            onClick={() => setStage(s)}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${
-              stage === s ? "bg-primary text-white" : "card-surface text-[#B8B8BC]"
-            }`}
-          >
-            {s === "all" ? "Tutte le Tappe" : `Tappa ${s}`}
-          </button>
-        ))}
-      </div>
-
       <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-        {(["all", "A", "B", "Finali"] as const).map((g) => (
+        {(["all", "Andata", "Ritorno"] as const).map((l) => (
           <button
-            key={g}
-            onClick={() => setGroup(g)}
+            key={l}
+            onClick={() => setLeg(l)}
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${
-              group === g ? "bg-gold text-black" : "card-surface text-[#B8B8BC]"
+              leg === l ? "bg-primary text-white" : "card-surface text-[#B8B8BC]"
             }`}
           >
-            {g === "all" ? "Tutti i Gironi" : g === "Finali" ? "Finali" : `Girone ${g}`}
+            {l === "all" ? "Tutte" : `Girone di ${l}`}
           </button>
         ))}
       </div>
 
       {loading && <p className="text-center text-sm text-[#8A8A8E]">Caricamento…</p>}
 
-      <div className="space-y-3">
-        {filtered.map((m) => (
-          <MatchCard key={m.id} match={m} teams={teams} venues={venues} />
+      <div className="space-y-6">
+        {grouped.map(([label, group]) => (
+          <div key={label}>
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-gold">{label}</h2>
+            <div className="space-y-3">
+              {group.map((m) => (
+                <MatchCard key={m.id} match={m} teams={teams} venues={venues} />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

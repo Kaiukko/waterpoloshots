@@ -2,44 +2,51 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { logActivity } from "@/lib/upload";
-import { Match, Team, Venue, BracketRound } from "@/lib/types";
-import { generateQuarterfinalPairings } from "@/lib/standings";
+import { Match, Team, Venue, Player, MatchScorer } from "@/lib/types";
 import Modal from "./Modal";
-
-const BRACKET_ROUNDS: { value: BracketRound; label: string }[] = [
-  { value: "quarti", label: "Quarti di Finale" },
-  { value: "semifinali", label: "Semifinali" },
-  { value: "finale_1_2", label: "Finale 1°-2°" },
-  { value: "finale_3_4", label: "Finale 3°-4°" },
-  { value: "finale_5_6", label: "Finale 5°-6°" },
-  { value: "finale_7_8", label: "Finale 7°-8°" },
-];
 
 export default function AdminMatches({
   matches,
   teams,
   venues,
+  players,
+  matchScorers,
   reload,
 }: {
   matches: Match[];
   teams: Team[];
   venues: Venue[];
+  players: Player[];
+  matchScorers: MatchScorer[];
   reload: () => void;
 }) {
   const [editing, setEditing] = useState<Partial<Match> | null>(null);
+  const [scorerInputs, setScorerInputs] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
-  const [generating, setGenerating] = useState(false);
+
+  const isRitornoEdit = !!editing?.id && editing?.leg === "Ritorno";
+
+  function openEdit(m: Partial<Match> | null) {
+    setEditing(m);
+    if (m?.id) {
+      const map: Record<string, number> = {};
+      matchScorers.filter((s) => s.match_id === m.id).forEach((s) => (map[s.player_id] = s.goals));
+      setScorerInputs(map);
+    } else {
+      setScorerInputs({});
+    }
+  }
 
   async function save() {
-    if (!editing?.team_home_id || !editing.team_away_id) return;
+    if (!editing) return;
+    if (!isRitornoEdit && (!editing.team_home_id || !editing.team_away_id)) return;
     setSaving(true);
+
     const payload = {
-      stage_number: editing.stage_number ?? 1,
-      group_name: editing.group_name ?? "A",
-      bracket_round: editing.group_name === "Finali" ? editing.bracket_round ?? null : null,
-      bracket_slot: editing.group_name === "Finali" ? editing.bracket_slot ?? null : null,
-      team_home_id: editing.team_home_id,
-      team_away_id: editing.team_away_id,
+      leg: editing.leg ?? "Andata",
+      matchday: editing.matchday ?? null,
+      team_home_id: editing.team_home_id ?? null,
+      team_away_id: editing.team_away_id ?? null,
       venue_id: editing.venue_id ?? null,
       match_date: editing.match_date ?? null,
       match_time: editing.match_time ?? null,
@@ -48,86 +55,97 @@ export default function AdminMatches({
       score_away: editing.score_away ?? null,
       period_info: editing.period_info ?? null,
     };
+
+    let matchId = editing.id ?? null;
+
     if (editing.id) {
       await supabase.from("matches").update(payload).eq("id", editing.id);
-      await logActivity(`Partita aggiornata`);
+      await logActivity("Partita aggiornata");
     } else {
-      await supabase.from("matches").insert(payload);
-      await logActivity(`Nuova partita programmata`);
+      const { data: inserted } = await supabase.from("matches").insert(payload).select().single();
+      await logActivity("Nuova partita programmata (andata)");
+      matchId = inserted?.id ?? null;
+
+      // Genera automaticamente la partita di ritorno con squadre invertite
+      if (inserted) {
+        await supabase.from("matches").insert({
+          leg: "Ritorno",
+          return_of: inserted.id,
+          matchday: null,
+          team_home_id: payload.team_away_id,
+          team_away_id: payload.team_home_id,
+          venue_id: null,
+          match_date: null,
+          match_time: null,
+          status: "Programmata",
+        });
+        await logActivity("Partita di ritorno generata automaticamente");
+      }
     }
+
+    // Salva i marcatori: sostituisce le righe esistenti per questa partita
+    if (matchId) {
+      await supabase.from("match_scorers").delete().eq("match_id", matchId);
+      const entries = Object.entries(scorerInputs).filter(([, goals]) => goals > 0);
+      if (entries.length > 0) {
+        await supabase.from("match_scorers").insert(
+          entries.map(([player_id, goals]) => ({ match_id: matchId, player_id, goals }))
+        );
+      }
+      if (entries.length > 0) await logActivity("Marcatori della partita aggiornati");
+    }
+
     setSaving(false);
     setEditing(null);
     reload();
   }
 
   async function remove(id: string) {
-    if (!confirm("Eliminare questa partita?")) return;
+    if (!confirm("Eliminare questa partita? Se è una partita di andata verrà eliminato anche il suo ritorno collegato.")) return;
     await supabase.from("matches").delete().eq("id", id);
-    await logActivity(`Partita eliminata`);
-    reload();
-  }
-
-  async function generateBracket() {
-    const existing = matches.filter((m) => m.bracket_round === "quarti");
-    if (existing.length > 0 && !confirm("I quarti di finale sono già stati generati. Rigenerarli?")) return;
-    const pairings = generateQuarterfinalPairings(teams, matches);
-    if (!pairings) {
-      alert("Servono almeno 4 squadre classificate in ciascun girone per generare i quarti.");
-      return;
-    }
-    setGenerating(true);
-    if (existing.length > 0) {
-      await supabase
-        .from("matches")
-        .delete()
-        .eq("bracket_round", "quarti");
-    }
-    await supabase.from("matches").insert(
-      pairings.map((p) => ({
-        stage_number: 2,
-        group_name: "Finali",
-        bracket_round: "quarti",
-        bracket_slot: p.slot,
-        team_home_id: p.home.id,
-        team_away_id: p.away.id,
-        status: "Programmata",
-      }))
-    );
-    await logActivity("Tabellone quarti di finale generato automaticamente");
-    setGenerating(false);
+    await supabase.from("matches").delete().eq("return_of", id);
+    await logActivity("Partita eliminata");
     reload();
   }
 
   const teamName = (id: string | null | undefined) => teams.find((t) => t.id === id)?.name ?? "TBD";
 
+  const sorted = [...matches].sort((a, b) => {
+    if (a.leg !== b.leg) return a.leg === "Andata" ? -1 : 1;
+    return (a.matchday ?? 999) - (b.matchday ?? 999);
+  });
+
+  const rosterForModal = editing
+    ? players.filter((p) => p.team_id === editing.team_home_id || p.team_id === editing.team_away_id)
+    : [];
+
+  const showScorers =
+    editing && (editing.status === "In Corso" || editing.status === "Terminata") && editing.team_home_id && editing.team_away_id;
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold">Partite</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={generateBracket}
-            disabled={generating}
-            className="rounded-full bg-gold px-3 py-1.5 text-[11px] font-bold text-black disabled:opacity-50"
-          >
-            {generating ? "Generazione…" : "Genera Tabellone"}
-          </button>
-          <button
-            onClick={() => setEditing({ stage_number: 1, group_name: "A", status: "Programmata" })}
-            disabled={teams.length < 2}
-            className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-40"
-          >
-            + Nuova
-          </button>
-        </div>
+        <button
+          onClick={() => openEdit({ leg: "Andata", status: "Programmata" })}
+          disabled={teams.length < 2}
+          className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-40"
+        >
+          + Nuova (Andata)
+        </button>
       </div>
+      <p className="mb-4 text-xs text-[#8A8A8E]">
+        Ogni partita di andata genera automaticamente il ritorno con le squadre invertite: dovrai solo
+        aggiungere data, ora e piscina quando lo modifichi.
+      </p>
 
       <div className="space-y-2">
-        {matches.map((m) => (
+        {sorted.map((m) => (
           <div key={m.id} className="card-surface rounded-xl p-3">
             <div className="mb-1 flex items-center justify-between text-[10px] text-[#8A8A8E]">
               <span>
-                Tappa {m.stage_number} · {m.group_name === "Finali" ? BRACKET_ROUNDS.find(r => r.value === m.bracket_round)?.label ?? "Finali" : `Girone ${m.group_name}`}
+                {m.leg}
+                {m.matchday ? ` · Giornata ${m.matchday}` : ""}
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 font-bold ${
@@ -149,7 +167,7 @@ export default function AdminMatches({
               <span>{teamName(m.team_away_id)}</span>
             </div>
             <div className="mt-2 flex justify-end gap-3">
-              <button onClick={() => setEditing(m)} className="text-xs font-semibold text-gold">
+              <button onClick={() => openEdit(m)} className="text-xs font-semibold text-gold">
                 Modifica
               </button>
               <button onClick={() => remove(m.id)} className="text-xs font-semibold text-primary">
@@ -162,87 +180,66 @@ export default function AdminMatches({
       </div>
 
       {editing && (
-        <Modal title={editing.id ? "Modifica Partita" : "Nuova Partita"} onClose={() => setEditing(null)}>
+        <Modal
+          title={editing.id ? `Modifica Partita (${editing.leg})` : "Nuova Partita di Andata"}
+          onClose={() => setEditing(null)}
+        >
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Tappa</label>
-                <select
-                  value={editing.stage_number ?? 1}
-                  onChange={(e) => setEditing({ ...editing, stage_number: Number(e.target.value) })}
-                  className="w-full rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value={1}>Tappa 1</option>
-                  <option value={2}>Tappa 2</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Girone</label>
-                <select
-                  value={editing.group_name ?? "A"}
-                  onChange={(e) => setEditing({ ...editing, group_name: e.target.value as any })}
-                  className="w-full rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="A">Girone A</option>
-                  <option value="B">Girone B</option>
-                  <option value="Finali">Finali</option>
-                </select>
-              </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Giornata</label>
+              <input
+                type="number"
+                value={editing.matchday ?? ""}
+                onChange={(e) => setEditing({ ...editing, matchday: Number(e.target.value) })}
+                className="w-full rounded-lg px-3 py-2 text-sm"
+                placeholder="es. 1"
+              />
             </div>
 
-            {editing.group_name === "Finali" && (
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Turno tabellone</label>
-                <select
-                  value={editing.bracket_round ?? ""}
-                  onChange={(e) => setEditing({ ...editing, bracket_round: e.target.value as BracketRound })}
-                  className="w-full rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">Seleziona turno</option>
-                  {BRACKET_ROUNDS.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
+            {isRitornoEdit ? (
+              <div className="rounded-lg bg-surface2 p-3 text-sm font-semibold">
+                {teamName(editing.team_home_id)} vs {teamName(editing.team_away_id)}
+                <p className="mt-1 text-xs font-normal text-[#8A8A8E]">
+                  Squadre invertite automaticamente dall&apos;andata. Aggiungi solo data, ora e piscina.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Squadra Casa</label>
+                  <select
+                    value={editing.team_home_id ?? ""}
+                    onChange={(e) => setEditing({ ...editing, team_home_id: e.target.value })}
+                    className="w-full rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">Seleziona</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Squadra Ospite</label>
+                  <select
+                    value={editing.team_away_id ?? ""}
+                    onChange={(e) => setEditing({ ...editing, team_away_id: e.target.value })}
+                    className="w-full rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">Seleziona</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Squadra Casa</label>
-                <select
-                  value={editing.team_home_id ?? ""}
-                  onChange={(e) => setEditing({ ...editing, team_home_id: e.target.value })}
-                  className="w-full rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">Seleziona</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Squadra Ospite</label>
-                <select
-                  value={editing.team_away_id ?? ""}
-                  onChange={(e) => setEditing({ ...editing, team_away_id: e.target.value })}
-                  className="w-full rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="">Seleziona</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Sede</label>
+              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Piscina</label>
               <select
                 value={editing.venue_id ?? ""}
                 onChange={(e) => setEditing({ ...editing, venue_id: e.target.value })}
@@ -330,9 +327,44 @@ export default function AdminMatches({
               </div>
             )}
 
+            {showScorers && (
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Marcatori</label>
+                {rosterForModal.length === 0 ? (
+                  <p className="text-xs text-[#8A8A8E]">
+                    Nessun giocatore in rosa per le squadre selezionate. Aggiungili dalla scheda Giocatori.
+                  </p>
+                ) : (
+                  <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-lg bg-surface2 p-2">
+                    {rosterForModal.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 rounded-lg bg-base px-2 py-1.5">
+                        <span className="flex-1 text-xs font-semibold">
+                          {p.cap_number ? `#${p.cap_number} ` : ""}
+                          {p.name}
+                          <span className="ml-1 text-[10px] font-normal text-[#8A8A8E]">
+                            ({teamName(p.team_id)})
+                          </span>
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={scorerInputs[p.id] ?? ""}
+                          onChange={(e) =>
+                            setScorerInputs({ ...scorerInputs, [p.id]: Number(e.target.value) })
+                          }
+                          className="w-16 rounded-md px-2 py-1 text-center text-xs"
+                          placeholder="0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <button
               onClick={save}
-              disabled={saving || !editing.team_home_id || !editing.team_away_id}
+              disabled={saving || (!isRitornoEdit && (!editing.team_home_id || !editing.team_away_id))}
               className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white disabled:opacity-50"
             >
               {saving ? "Salvataggio…" : "Salva"}

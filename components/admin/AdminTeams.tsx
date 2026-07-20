@@ -16,14 +16,13 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
     if (editing.id) {
       await supabase
         .from("teams")
-        .update({ name: editing.name, logo_url: editing.logo_url, group_name: editing.group_name })
+        .update({ name: editing.name, logo_url: editing.logo_url })
         .eq("id", editing.id);
       await logActivity(`Squadra modificata: ${editing.name}`);
     } else {
       await supabase.from("teams").insert({
         name: editing.name,
         logo_url: editing.logo_url ?? null,
-        group_name: editing.group_name ?? "A",
       });
       await logActivity(`Nuova squadra aggiunta: ${editing.name}`);
     }
@@ -44,7 +43,7 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-lg font-bold">Squadre</h2>
         <button
-          onClick={() => setEditing({ group_name: "A" })}
+          onClick={() => setEditing({})}
           className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white"
         >
           + Nuova
@@ -62,7 +61,6 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
             </div>
             <div className="flex-1">
               <div className="text-sm font-semibold">{t.name}</div>
-              <div className="text-xs text-[#8A8A8E]">Girone {t.group_name}</div>
             </div>
             <button onClick={() => setEditing(t)} className="text-xs font-semibold text-gold">
               Modifica
@@ -84,7 +82,7 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
                 value={editing.name ?? ""}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                 className="w-full rounded-lg px-3 py-2 text-sm"
-                placeholder="es. Sport Project Bari"
+                placeholder="es. Como Nuoto"
               />
             </div>
             <ImagePicker
@@ -93,22 +91,6 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
               onChange={(url) => setEditing({ ...editing, logo_url: url })}
               label="Logo squadra"
             />
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Girone</label>
-              <div className="flex gap-2">
-                {(["A", "B"] as const).map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setEditing({ ...editing, group_name: g })}
-                    className={`flex-1 rounded-lg py-2 text-sm font-bold ${
-                      editing.group_name === g ? "bg-primary text-white" : "bg-surface2 text-[#B8B8BC]"
-                    }`}
-                  >
-                    Girone {g}
-                  </button>
-                ))}
-              </div>
-            </div>
             <button
               onClick={save}
               disabled={saving || !editing.name}

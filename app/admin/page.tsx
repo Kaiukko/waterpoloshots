@@ -16,7 +16,7 @@ type Tab = "dashboard" | "squadre" | "giocatori" | "partite" | "sedi" | "imposta
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [tab, setTab] = useState<Tab>("dashboard");
-  const { settings, venues, teams, players, matches, reload } = useTournamentData();
+  const { settings, venues, teams, players, matches, scorers, reload } = useTournamentData();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -70,9 +70,18 @@ export default function AdminPage() {
         <AdminDashboard teams={teams} players={players} venues={venues} matches={matches} />
       )}
       {tab === "squadre" && <AdminTeams teams={teams} reload={reload} />}
-      {tab === "giocatori" && <AdminPlayers players={players} teams={teams} reload={reload} />}
+      {tab === "giocatori" && (
+        <AdminPlayers players={players} teams={teams} scorers={scorers} reload={reload} />
+      )}
       {tab === "partite" && (
-        <AdminMatches matches={matches} teams={teams} venues={venues} reload={reload} />
+        <AdminMatches
+          matches={matches}
+          teams={teams}
+          venues={venues}
+          players={players}
+          matchScorers={scorers}
+          reload={reload}
+        />
       )}
       {tab === "sedi" && <AdminVenues venues={venues} reload={reload} />}
       {tab === "impostazioni" && <AdminSettings settings={settings} reload={reload} />}

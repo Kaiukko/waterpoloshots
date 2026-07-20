@@ -1,12 +1,5 @@
-export type GroupName = "A" | "B";
 export type MatchStatus = "Programmata" | "In Corso" | "Terminata";
-export type BracketRound =
-  | "quarti"
-  | "semifinali"
-  | "finale_1_2"
-  | "finale_3_4"
-  | "finale_5_6"
-  | "finale_7_8";
+export type Leg = "Andata" | "Ritorno";
 
 export interface Settings {
   id: boolean;
@@ -15,8 +8,7 @@ export interface Settings {
   logo_url: string | null;
   primary_color: string;
   secondary_color: string;
-  current_stage_number: number;
-  current_stage_name: string;
+  current_matchday: number;
   home_background_url: string | null;
   header_background_url: string | null;
 }
@@ -34,7 +26,6 @@ export interface Team {
   id: string;
   name: string;
   logo_url: string | null;
-  group_name: GroupName | null;
 }
 
 export interface Player {
@@ -44,15 +35,20 @@ export interface Player {
   cap_number: number | null;
   photo_url: string | null;
   role: string | null;
+}
+
+export interface MatchScorer {
+  id: string;
+  match_id: string;
+  player_id: string;
   goals: number;
 }
 
 export interface Match {
   id: string;
-  stage_number: number;
-  group_name: string | null; // 'A' | 'B' | 'Finali'
-  bracket_round: BracketRound | null;
-  bracket_slot: number | null;
+  leg: Leg;
+  matchday: number | null;
+  return_of: string | null;
   team_home_id: string | null;
   team_away_id: string | null;
   venue_id: string | null;
@@ -73,4 +69,3 @@ export const WATERPOLO_ROLES = [
   "Attaccante",
 ];
 
-export const STAGE_POINTS = [10, 8, 6, 5, 4, 3, 2, 1];

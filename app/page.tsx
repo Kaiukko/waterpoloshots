@@ -37,14 +37,9 @@ export default function HomePage() {
           </div>
         )}
         <h1 className="font-display text-3xl font-bold leading-tight">
-          {settings?.tournament_title || "Waterpolo Summer Cup"}
+          {settings?.tournament_title || "Campionato di Serie B"}
         </h1>
-        <p className="mt-1 text-sm text-[#B8B8BC]">{settings?.tournament_subtitle || "Sport Project Bari"}</p>
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-line bg-black/40 px-3 py-1.5 text-xs font-semibold">
-          <span className="text-gold">Tappa {settings?.current_stage_number ?? 1}</span>
-          <span className="text-[#8A8A8E]">·</span>
-          <span>{settings?.current_stage_name || "Fase a Gironi"}</span>
-        </div>
+        <p className="mt-1 text-sm text-[#B8B8BC]">{settings?.tournament_subtitle || "Pallanuoto Maschile"}</p>
       </section>
 
       {/* Bento quick links */}
@@ -59,10 +54,10 @@ export default function HomePage() {
           <div className="mt-2 text-sm font-bold">Classifiche</div>
           <div className="text-xs text-[#8A8A8E]">Gironi &amp; circuito</div>
         </Link>
-        <Link href="/finali" className="card-surface rounded-2xl p-4">
-          <div className="text-2xl">🥇</div>
-          <div className="mt-2 text-sm font-bold">Finali</div>
-          <div className="text-xs text-[#8A8A8E]">Tabellone 1°-8°</div>
+        <Link href="/squadre" className="card-surface rounded-2xl p-4">
+          <div className="text-2xl">🤽</div>
+          <div className="mt-2 text-sm font-bold">Squadre</div>
+          <div className="text-xs text-[#8A8A8E]">Rose &amp; giocatori</div>
         </Link>
         <Link href="/admin" className="card-surface rounded-2xl p-4">
           <div className="text-2xl">⚙️</div>
