@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0e0e0e;
+  color: #ffffff;
+  overflow-x: hidden;
+  font-family: var(--font-anybody), sans-serif;
+  text-transform: uppercase;
+  min-height: max(884px, 100dvh);
+}
+
+.no-uppercase {
+  text-transform: none;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* Sottile griglia rossa di sfondo, tipica del design "Phoenix Sport Pro" */
+.phoenix-bg {
+  background-image: linear-gradient(rgba(230, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-attachment: fixed;
+}
+
+.hero-gradient {
+  background: linear-gradient(180deg, rgba(14, 14, 14, 0.4) 0%, rgba(14, 14, 14, 0.8) 60%, #0e0e0e 100%);
+}
+
+.accent-bar {
+  width: 4px;
+  align-self: stretch;
+  background: #e60000;
+}
+
+/* Card con bordo inferiore che diventa rosso in hover (usata su liste cliccabili) */
+.pro-card {
+  background: #1b1b1b;
+  border: 2px solid #444444;
+  transition: all 0.2s ease-in-out;
+}
+.pro-card:hover {
+  border-color: #e60000;
+  background: #212121;
+}
+
+/* Alias verso il vecchio nome di classe usato nel pannello admin e nelle schede dettaglio */
+.card-surface {
+  background: #1b1b1b;
+  border: 1px solid #444444;
+}
+
+.match-card-hover {
+  transition: all 0.2s ease;
+}
+.match-card-hover:hover {
+  background-color: #1b1b1b;
+  border-color: #e60000;
+}
+
+/* Input in stile Phoenix: solo bordo inferiore, nessun fondo */
+.input-phoenix {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #444444;
+  border-radius: 0;
+  transition: border-bottom 0.3s ease;
+}
+.input-phoenix:focus {
+  outline: none;
+  border-bottom: 1px solid #e60000;
+}
+
+input:not(.input-phoenix),
+select,
+textarea {
+  background: #1b1b1b;
+  border: 1px solid #444444;
+  color: #ffffff;
+  border-radius: 0;
+}
+input:not(.input-phoenix):focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #e60000;
+  outline-offset: 1px;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0e0e0e;
+}
+::-webkit-scrollbar-thumb {
+  background: #e60000;
+}
+
+@keyframes livepulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(230, 0, 0, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(230, 0, 0, 0);
+  }
+}
+.live-dot {
+  animation: livepulse 1.6s infinite;
+}
