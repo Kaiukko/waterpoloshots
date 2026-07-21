@@ -15,7 +15,7 @@ export interface StandingRow {
 function tally(teams: Team[], relevant: Match[]): Map<string, StandingRow> {
   const rows = new Map<string, StandingRow>();
   teams.forEach((team) =>
-    rows.set(team.id, { team,  points: 0, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0 })
+    rows.set(team.id, { team, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 })
   );
   for (const m of relevant) {
     const home = m.team_home_id ? rows.get(m.team_home_id) : undefined;
