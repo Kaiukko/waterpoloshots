@@ -9,7 +9,7 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
   const [form, setForm] = useState<Settings | null>(settings);
   const [saving, setSaving] = useState(false);
 
-  if (!form) return <p className="text-sm text-[#8A8A8E]">Caricamento impostazioni…</p>;
+  if (!form) return <p className="text-sm text-muted">Caricamento impostazioni…</p>;
 
   async function save() {
     if (!form) return;
@@ -36,7 +36,7 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
       <h2 className="font-display text-lg font-bold">Personalizzazione &amp; Branding</h2>
 
       <div>
-        <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Titolo torneo</label>
+        <label className="mb-1.5 block text-xs font-semibold text-muted-2">Titolo torneo</label>
         <input
           value={form.tournament_title}
           onChange={(e) => setForm({ ...form, tournament_title: e.target.value })}
@@ -44,7 +44,7 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
         />
       </div>
       <div>
-        <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Sottotitolo</label>
+        <label className="mb-1.5 block text-xs font-semibold text-muted-2">Sottotitolo</label>
         <input
           value={form.tournament_subtitle}
           onChange={(e) => setForm({ ...form, tournament_subtitle: e.target.value })}
@@ -61,13 +61,13 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Colore primario</label>
+          <label className="mb-1.5 block text-xs font-semibold text-muted-2">Colore primario</label>
           <div className="flex items-center gap-2">
             <input
               type="color"
               value={form.primary_color}
               onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-              className="h-9 w-12 rounded-lg border border-line bg-transparent"
+              className="h-9 w-12 rounded-lg border border-border bg-transparent"
             />
             <input
               value={form.primary_color}
@@ -77,13 +77,13 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
           </div>
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Colore secondario</label>
+          <label className="mb-1.5 block text-xs font-semibold text-muted-2">Colore secondario</label>
           <div className="flex items-center gap-2">
             <input
               type="color"
               value={form.secondary_color}
               onChange={(e) => setForm({ ...form, secondary_color: e.target.value })}
-              className="h-9 w-12 rounded-lg border border-line bg-transparent"
+              className="h-9 w-12 rounded-lg border border-border bg-transparent"
             />
             <input
               value={form.secondary_color}
@@ -110,7 +110,7 @@ export default function AdminSettings({ settings, reload }: { settings: Settings
       <button
         onClick={save}
         disabled={saving}
-        className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white disabled:opacity-50"
+        className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-on-primary disabled:opacity-50"
       >
         {saving ? "Salvataggio…" : "Salva Impostazioni"}
       </button>

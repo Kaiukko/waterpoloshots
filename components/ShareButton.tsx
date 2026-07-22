@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Share2, Check } from "lucide-react";
 
 export default function ShareButton({
   text,
@@ -32,30 +33,25 @@ export default function ShareButton({
     }
   }
 
-  const base =
-    "inline-flex items-center gap-1.5 rounded-full font-semibold transition active:scale-95 shrink-0";
+  const base = "inline-flex items-center gap-1.5 rounded-full font-semibold transition active:scale-95 shrink-0";
   const styles =
     variant === "footer"
-      ? "px-3.5 py-1.5 text-xs bg-primary text-white"
+      ? "px-4 py-2 text-xs bg-primary text-on-primary"
       : variant === "compact"
-      ? "px-2 py-1 text-[11px] bg-white/10 text-white"
-      : "px-3 py-1.5 text-xs bg-white/10 text-white";
+      ? "p-1.5 text-muted hover:text-on-surface"
+      : "px-3 py-1.5 text-xs bg-surface-2 text-on-surface border border-border";
 
   return (
     <button onClick={handleShare} className={`${base} ${styles}`}>
       {copied ? (
         <>
-          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Copiato!
+          <Check size={14} />
+          {variant !== "compact" && "Copiato!"}
         </>
       ) : (
         <>
-          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v9M8 8l4-4 4 4M5 15v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Condividi
+          <Share2 size={14} />
+          {variant !== "compact" && "Condividi"}
         </>
       )}
     </button>

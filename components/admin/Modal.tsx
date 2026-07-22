@@ -20,7 +20,7 @@ export default function Modal({
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line sm:hidden" />
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display text-lg font-bold">{title}</h3>
-          <button onClick={onClose} className="text-[#8A8A8E]">
+          <button onClick={onClose} className="text-muted">
             ✕
           </button>
         </div>

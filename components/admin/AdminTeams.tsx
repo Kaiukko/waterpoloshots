@@ -44,7 +44,7 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
         <h2 className="font-display text-lg font-bold">Squadre</h2>
         <button
           onClick={() => setEditing({})}
-          className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white"
+          className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-on-primary"
         >
           + Nuova
         </button>
@@ -53,7 +53,7 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
       <div className="space-y-2">
         {teams.map((t) => (
           <div key={t.id} className="card-surface flex items-center gap-3 rounded-xl p-3">
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-line bg-surface2">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border bg-surface-2">
               {t.logo_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={t.logo_url} alt="" className="h-full w-full object-cover" />
@@ -62,7 +62,7 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
             <div className="flex-1">
               <div className="text-sm font-semibold">{t.name}</div>
             </div>
-            <button onClick={() => setEditing(t)} className="text-xs font-semibold text-gold">
+            <button onClick={() => setEditing(t)} className="text-xs font-semibold text-secondary">
               Modifica
             </button>
             <button onClick={() => remove(t.id, t.name)} className="text-xs font-semibold text-primary">
@@ -70,14 +70,14 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
             </button>
           </div>
         ))}
-        {teams.length === 0 && <p className="text-sm text-[#8A8A8E]">Nessuna squadra ancora.</p>}
+        {teams.length === 0 && <p className="text-sm text-muted">Nessuna squadra ancora.</p>}
       </div>
 
       {editing && (
         <Modal title={editing.id ? "Modifica Squadra" : "Nuova Squadra"} onClose={() => setEditing(null)}>
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Nome squadra</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Nome squadra</label>
               <input
                 value={editing.name ?? ""}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
@@ -94,7 +94,7 @@ export default function AdminTeams({ teams, reload }: { teams: Team[]; reload: (
             <button
               onClick={save}
               disabled={saving || !editing.name}
-              className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-on-primary disabled:opacity-50"
             >
               {saving ? "Salvataggio…" : "Salva"}
             </button>

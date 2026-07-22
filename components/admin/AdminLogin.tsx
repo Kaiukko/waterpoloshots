@@ -21,10 +21,10 @@ export default function AdminLogin() {
     <main className="mx-auto flex min-h-[70vh] max-w-md flex-col items-center justify-center px-4">
       <div className="card-surface w-full rounded-3xl p-6">
         <h1 className="font-display mb-1 text-center text-2xl font-bold">Area Admin</h1>
-        <p className="mb-6 text-center text-sm text-[#8A8A8E]">Accedi per gestire il torneo</p>
+        <p className="mb-6 text-center text-sm text-muted">Accedi per gestire il torneo</p>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Username / Email</label>
+            <label className="mb-1.5 block text-xs font-semibold text-muted-2">Username / Email</label>
             <input
               type="email"
               required
@@ -35,7 +35,7 @@ export default function AdminLogin() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Password</label>
+            <label className="mb-1.5 block text-xs font-semibold text-muted-2">Password</label>
             <input
               type="password"
               required
@@ -49,7 +49,7 @@ export default function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-on-primary disabled:opacity-50"
           >
             {loading ? "Accesso…" : "Accedi"}
           </button>

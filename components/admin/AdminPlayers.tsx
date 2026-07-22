@@ -62,7 +62,7 @@ export default function AdminPlayers({
         <button
           onClick={() => setEditing({ team_id: teams[0]?.id })}
           disabled={teams.length === 0}
-          className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-40"
+          className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-on-primary disabled:opacity-40"
         >
           + Nuovo
         </button>
@@ -81,7 +81,7 @@ export default function AdminPlayers({
         ))}
       </select>
 
-      <p className="mb-3 text-xs text-[#8A8A8E]">
+      <p className="mb-3 text-xs text-muted">
         I gol segnati si aggiornano automaticamente dai marcatori inseriti in ogni partita
         (scheda Partite) e non sono modificabili qui direttamente.
       </p>
@@ -89,7 +89,7 @@ export default function AdminPlayers({
       <div className="space-y-2">
         {visible.map((p) => (
           <div key={p.id} className="card-surface flex items-center gap-3 rounded-xl p-3">
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-line bg-surface2">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border bg-surface-2">
               {p.photo_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={p.photo_url} alt="" className="h-full w-full object-cover" />
@@ -100,11 +100,11 @@ export default function AdminPlayers({
                 {p.cap_number ? `#${p.cap_number} ` : ""}
                 {p.name}
               </div>
-              <div className="text-xs text-[#8A8A8E]">
+              <div className="text-xs text-muted">
                 {teams.find((t) => t.id === p.team_id)?.name} · {p.role ?? "—"} · {goalsMap.get(p.id) ?? 0} gol
               </div>
             </div>
-            <button onClick={() => setEditing(p)} className="text-xs font-semibold text-gold">
+            <button onClick={() => setEditing(p)} className="text-xs font-semibold text-secondary">
               Modifica
             </button>
             <button onClick={() => remove(p.id, p.name)} className="text-xs font-semibold text-primary">
@@ -112,7 +112,7 @@ export default function AdminPlayers({
             </button>
           </div>
         ))}
-        {visible.length === 0 && <p className="text-sm text-[#8A8A8E]">Nessun giocatore ancora.</p>}
+        {visible.length === 0 && <p className="text-sm text-muted">Nessun giocatore ancora.</p>}
       </div>
 
       {editing && (
@@ -126,7 +126,7 @@ export default function AdminPlayers({
               round
             />
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Nome e cognome</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Nome e cognome</label>
               <input
                 value={editing.name ?? ""}
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
@@ -134,7 +134,7 @@ export default function AdminPlayers({
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Numero calottina</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Numero calottina</label>
               <input
                 type="number"
                 value={editing.cap_number ?? ""}
@@ -143,7 +143,7 @@ export default function AdminPlayers({
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Ruolo</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Ruolo</label>
               <select
                 value={editing.role ?? ""}
                 onChange={(e) => setEditing({ ...editing, role: e.target.value })}
@@ -158,7 +158,7 @@ export default function AdminPlayers({
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Squadra</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Squadra</label>
               <select
                 value={editing.team_id ?? ""}
                 onChange={(e) => setEditing({ ...editing, team_id: e.target.value })}
@@ -174,7 +174,7 @@ export default function AdminPlayers({
             <button
               onClick={save}
               disabled={saving || !editing.name || !editing.team_id}
-              className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-on-primary disabled:opacity-50"
             >
               {saving ? "Salvataggio…" : "Salva"}
             </button>

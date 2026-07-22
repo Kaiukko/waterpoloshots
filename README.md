@@ -73,6 +73,14 @@ supabase/
   tutti (`/squadre/[id]`, `/giocatori/[id]`) ma modificabile solo dall'amministratore tramite
   il pannello `/admin`.
 
+## Identità visiva
+
+L'interfaccia adotta un tema scuro moderno ispirato al riferimento *"Waterpolo Shots"*:
+sfondo quasi nero con un leggero bagliore rosso sfumato in alto, rosso primario (#e5142b) e
+oro secondario (#f0b429) personalizzabili da Admin → Impostazioni, card scure con angoli
+arrotondati e bordi sottili, tipografia pulita (maiuscolo solo per le piccole etichette
+"eyebrow"), icone lucide-react e bottom bar con icona attiva evidenziata da un alone colorato.
+
 ## Note tecniche
 
 - **Realtime:** tutte le pagine pubbliche e l'admin si aggiornano automaticamente via

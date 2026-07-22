@@ -1,9 +1,16 @@
 "use client";
 import { useState } from "react";
+import { Plus, Pencil, Trash2, RotateCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { logActivity } from "@/lib/upload";
 import { Match, Team, Venue, Player, MatchScorer } from "@/lib/types";
 import Modal from "./Modal";
+
+const STATUS_BADGE: Record<string, string> = {
+  Programmata: "bg-surface-2 text-muted-2",
+  "In Corso": "bg-primary-soft text-primary",
+  Terminata: "bg-secondary-soft text-secondary",
+};
 
 export default function AdminMatches({
   matches,
@@ -66,7 +73,6 @@ export default function AdminMatches({
       await logActivity("Nuova partita programmata (andata)");
       matchId = inserted?.id ?? null;
 
-      // Genera automaticamente la partita di ritorno con squadre invertite
       if (inserted) {
         await supabase.from("matches").insert({
           leg: "Ritorno",
@@ -83,7 +89,6 @@ export default function AdminMatches({
       }
     }
 
-    // Salva i marcatori: sostituisce le righe esistenti per questa partita
     if (matchId) {
       await supabase.from("match_scorers").delete().eq("match_id", matchId);
       const entries = Object.entries(scorerInputs).filter(([, goals]) => goals > 0);
@@ -108,7 +113,10 @@ export default function AdminMatches({
     reload();
   }
 
-  const teamName = (id: string | null | undefined) => teams.find((t) => t.id === id)?.name ?? "TBD";
+  const teamShort = (id: string | null | undefined) => {
+    const n = teams.find((t) => t.id === id)?.name ?? "TBD";
+    return n;
+  };
 
   const sorted = [...matches].sort((a, b) => {
     if (a.leg !== b.leg) return a.leg === "Andata" ? -1 : 1;
@@ -124,59 +132,76 @@ export default function AdminMatches({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="font-display text-lg font-bold">Partite</h2>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-bold text-on-surface">Partite</h2>
         <button
           onClick={() => openEdit({ leg: "Andata", status: "Programmata" })}
           disabled={teams.length < 2}
-          className="rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-on-primary disabled:opacity-40"
         >
-          + Nuova (Andata)
+          <Plus size={14} /> Nuova
         </button>
       </div>
-      <p className="mb-4 text-xs text-[#8A8A8E]">
+      <p className="mb-4 text-xs text-muted">
         Ogni partita di andata genera automaticamente il ritorno con le squadre invertite: dovrai solo
         aggiungere data, ora e piscina quando lo modifichi.
       </p>
 
-      <div className="space-y-2">
-        {sorted.map((m) => (
-          <div key={m.id} className="card-surface rounded-xl p-3">
-            <div className="mb-1 flex items-center justify-between text-[10px] text-[#8A8A8E]">
-              <span>
-                {m.leg}
-                {m.matchday ? ` · Giornata ${m.matchday}` : ""}
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 font-bold ${
-                  m.status === "In Corso"
-                    ? "bg-primary/20 text-primary"
-                    : m.status === "Terminata"
-                    ? "bg-gold/20 text-gold"
-                    : "bg-white/10 text-[#B8B8BC]"
-                }`}
-              >
-                {m.status}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm font-semibold">
-              <span>{teamName(m.team_home_id)}</span>
-              <span className="font-display text-gold">
-                {m.score_home ?? "-"} : {m.score_away ?? "-"}
-              </span>
-              <span>{teamName(m.team_away_id)}</span>
-            </div>
-            <div className="mt-2 flex justify-end gap-3">
-              <button onClick={() => openEdit(m)} className="text-xs font-semibold text-gold">
-                Modifica
-              </button>
-              <button onClick={() => remove(m.id)} className="text-xs font-semibold text-primary">
-                Elimina
-              </button>
-            </div>
-          </div>
-        ))}
-        {matches.length === 0 && <p className="text-sm text-[#8A8A8E]">Nessuna partita ancora.</p>}
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border text-left text-muted">
+              <th className="px-3 py-2.5 font-semibold">Quando</th>
+              <th className="px-2 py-2.5 font-semibold">Giornata</th>
+              <th className="px-2 py-2.5 font-semibold">Match</th>
+              <th className="px-2 py-2.5 text-center font-semibold">Score</th>
+              <th className="px-2 py-2.5 font-semibold">Stato</th>
+              <th className="px-3 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((m) => (
+              <tr key={m.id} className="border-b border-border last:border-0">
+                <td className="px-3 py-2.5 text-muted">
+                  {m.match_date ?? "—"}
+                  {m.match_time ? `, ${m.match_time}` : ""}
+                </td>
+                <td className="px-2 py-2.5 text-muted">
+                  {m.matchday ? `G${m.matchday}` : "-"} · {m.leg}
+                </td>
+                <td className="px-2 py-2.5 font-semibold text-on-surface">
+                  {teamShort(m.team_home_id)} vs {teamShort(m.team_away_id)}
+                </td>
+                <td className="px-2 py-2.5 text-center font-display font-bold text-secondary">
+                  {m.score_home ?? 0} - {m.score_away ?? 0}
+                </td>
+                <td className="px-2 py-2.5">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_BADGE[m.status]}`}>
+                    {m.status === "Programmata" ? "Programm." : m.status}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5">
+                  <div className="flex items-center justify-end gap-2 text-muted">
+                    {m.leg === "Andata" && <RotateCw size={13} className="text-muted-2" />}
+                    <button onClick={() => openEdit(m)} className="hover:text-on-surface">
+                      <Pencil size={13} />
+                    </button>
+                    <button onClick={() => remove(m.id)} className="hover:text-primary">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {matches.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-muted">
+                  Nessuna partita ancora.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {editing && (
@@ -186,7 +211,7 @@ export default function AdminMatches({
         >
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Giornata</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Giornata</label>
               <input
                 type="number"
                 value={editing.matchday ?? ""}
@@ -197,16 +222,16 @@ export default function AdminMatches({
             </div>
 
             {isRitornoEdit ? (
-              <div className="rounded-lg bg-surface2 p-3 text-sm font-semibold">
-                {teamName(editing.team_home_id)} vs {teamName(editing.team_away_id)}
-                <p className="mt-1 text-xs font-normal text-[#8A8A8E]">
+              <div className="rounded-lg bg-surface-2 p-3 text-sm font-semibold text-on-surface">
+                {teamShort(editing.team_home_id)} vs {teamShort(editing.team_away_id)}
+                <p className="mt-1 text-xs font-normal text-muted">
                   Squadre invertite automaticamente dall&apos;andata. Aggiungi solo data, ora e piscina.
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Squadra Casa</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-muted-2">Squadra Casa</label>
                   <select
                     value={editing.team_home_id ?? ""}
                     onChange={(e) => setEditing({ ...editing, team_home_id: e.target.value })}
@@ -221,7 +246,7 @@ export default function AdminMatches({
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Squadra Ospite</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-muted-2">Squadra Ospite</label>
                   <select
                     value={editing.team_away_id ?? ""}
                     onChange={(e) => setEditing({ ...editing, team_away_id: e.target.value })}
@@ -239,7 +264,7 @@ export default function AdminMatches({
             )}
 
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Piscina</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Piscina</label>
               <select
                 value={editing.venue_id ?? ""}
                 onChange={(e) => setEditing({ ...editing, venue_id: e.target.value })}
@@ -256,7 +281,7 @@ export default function AdminMatches({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Data</label>
+                <label className="mb-1.5 block text-xs font-semibold text-muted-2">Data</label>
                 <input
                   type="date"
                   value={editing.match_date ?? ""}
@@ -265,7 +290,7 @@ export default function AdminMatches({
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Orario</label>
+                <label className="mb-1.5 block text-xs font-semibold text-muted-2">Orario</label>
                 <input
                   type="time"
                   value={editing.match_time ?? ""}
@@ -276,14 +301,14 @@ export default function AdminMatches({
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Stato</label>
+              <label className="mb-1.5 block text-xs font-semibold text-muted-2">Stato</label>
               <div className="flex gap-2">
                 {(["Programmata", "In Corso", "Terminata"] as const).map((s) => (
                   <button
                     key={s}
                     onClick={() => setEditing({ ...editing, status: s })}
                     className={`flex-1 rounded-lg py-2 text-xs font-bold ${
-                      editing.status === s ? "bg-primary text-white" : "bg-surface2 text-[#B8B8BC]"
+                      editing.status === s ? "bg-primary text-on-primary" : "bg-surface-2 text-muted-2"
                     }`}
                   >
                     {s}
@@ -295,7 +320,7 @@ export default function AdminMatches({
             {(editing.status === "In Corso" || editing.status === "Terminata") && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Gol Casa</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-muted-2">Gol Casa</label>
                   <input
                     type="number"
                     value={editing.score_home ?? ""}
@@ -304,7 +329,7 @@ export default function AdminMatches({
                   />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Gol Ospite</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-muted-2">Gol Ospite</label>
                   <input
                     type="number"
                     value={editing.score_away ?? ""}
@@ -317,7 +342,7 @@ export default function AdminMatches({
 
             {editing.status === "In Corso" && (
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Tempo di gioco</label>
+                <label className="mb-1.5 block text-xs font-semibold text-muted-2">Tempo di gioco</label>
                 <input
                   value={editing.period_info ?? ""}
                   onChange={(e) => setEditing({ ...editing, period_info: e.target.value })}
@@ -329,21 +354,19 @@ export default function AdminMatches({
 
             {showScorers && (
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[#B8B8BC]">Marcatori</label>
+                <label className="mb-1.5 block text-xs font-semibold text-muted-2">Marcatori</label>
                 {rosterForModal.length === 0 ? (
-                  <p className="text-xs text-[#8A8A8E]">
+                  <p className="text-xs text-muted">
                     Nessun giocatore in rosa per le squadre selezionate. Aggiungili dalla scheda Giocatori.
                   </p>
                 ) : (
-                  <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-lg bg-surface2 p-2">
+                  <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-lg bg-surface-2 p-2">
                     {rosterForModal.map((p) => (
-                      <div key={p.id} className="flex items-center gap-2 rounded-lg bg-base px-2 py-1.5">
-                        <span className="flex-1 text-xs font-semibold">
+                      <div key={p.id} className="flex items-center gap-2 rounded-lg bg-surface px-2 py-1.5">
+                        <span className="flex-1 text-xs font-semibold text-on-surface">
                           {p.cap_number ? `#${p.cap_number} ` : ""}
                           {p.name}
-                          <span className="ml-1 text-[10px] font-normal text-[#8A8A8E]">
-                            ({teamName(p.team_id)})
-                          </span>
+                          <span className="ml-1 text-[10px] font-normal text-muted">({teamShort(p.team_id)})</span>
                         </span>
                         <input
                           type="number"
@@ -365,7 +388,7 @@ export default function AdminMatches({
             <button
               onClick={save}
               disabled={saving || (!isRitornoEdit && (!editing.team_home_id || !editing.team_away_id))}
-              className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white disabled:opacity-50"
+              className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-on-primary disabled:opacity-50"
             >
               {saving ? "Salvataggio…" : "Salva"}
             </button>
